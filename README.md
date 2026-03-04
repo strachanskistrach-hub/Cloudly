@@ -10,6 +10,13 @@ Użytkownik wpisuje nazwę miasta, a aplikacja wyświetla:
  - Prędkość wiatru
  - Ikonę pogodową
 
+ Technologie użyte w projekcie: 
+  - HTML
+  - CSS
+  - PHP
+  - Java Script
+  - Chat Gpt
+
 ## Jak uruchomić projekt
 
 1. Pobierz repozytorium z GitHub.
