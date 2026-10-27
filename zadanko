@@ -1,0 +1,171 @@
+package com.example.edytorplikow;
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.*;
+import androidx.recyclerview.widget.*;
+import java.io.File;
+import java.util.*;
+
+public class MainActivity extends Activity {
+
+    EditText name, editor;
+    ArrayList<String> files = new ArrayList<>();
+    ArrayAdapter<String> adapter;
+    File dir, current;
+
+    @Override
+    protected void onCreate(Bundle b) {
+        super.onCreate(b);
+        setContentView(R.layout.activity_main);
+
+        name = findViewById(R.id.fileNameInput);
+        editor = findViewById(R.id.editor);
+        dir = new File(getFilesDir(), "documents");
+        dir.mkdirs();
+
+        RecyclerView rv = findViewById(R.id.openFilesRecyclerView);
+        adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1, files);
+
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(new RecyclerView.Adapter<Holder>() {
+            @Override
+            public Holder onCreateViewHolder(
+                    android.view.ViewGroup p, int t) {
+                TextView v = new TextView(MainActivity.this);
+                v.setPadding(16, 12, 16, 12);
+                return new Holder(v);
+            }
+
+            @Override
+            public void onBindViewHolder(Holder h, int i) {
+                String f = files.get(i);
+                h.v.setText(f);
+                h.v.setOnClickListener(v -> open(f));
+            }
+
+            @Override
+            public int getItemCount() {
+                return files.size();
+            }
+        });
+
+        findViewById(R.id.openButton).setOnClickListener(v ->
+                open(name.getText().toString()));
+
+        findViewById(R.id.newButton).setOnClickListener(v -> {
+            current = null;
+            name.setText("");
+            editor.setText("");
+        });
+
+        findViewById(R.id.saveButton).setOnClickListener(v -> save());
+
+        findViewById(R.id.closeButton).setOnClickListener(v -> {
+            current = null;
+            name.setText("");
+            editor.setText("");
+        });
+
+        findViewById(R.id.deleteButton).setOnClickListener(v -> {
+            File f = file(name.getText().toString());
+            if (f != null && f.delete()) {
+                current = null;
+                name.setText("");
+                editor.setText("");
+                refresh();
+                msg("Usunięto plik");
+            } else msg("Nie znaleziono pliku");
+        });
+
+        refresh();
+    }
+
+    File file(String n) {
+        n = n.trim();
+        if (n.isEmpty() || n.contains("/") ||
+                n.contains("\\") || n.contains(":")) return null;
+        if (!n.endsWith(".txt")) n += ".txt";
+        return new File(dir, n);
+    }
+
+    void open(String n) {
+        File f = file(n);
+        try {
+            if (f == null || !f.isFile()) {
+                msg("Plik nie istnieje");
+                return;
+            }
+            editor.setText(new String(
+                    java.nio.file.Files.readAllBytes(f.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8));
+            name.setText(f.getName());
+            current = f;
+            refresh();
+        } catch (Exception e) {
+            msg("Błąd otwierania");
+        }
+    }
+
+    void save() {
+        File f = file(name.getText().toString());
+        try {
+            if (f == null) {
+                msg("Podaj poprawną nazwę");
+                return;
+            }
+            java.nio.file.Files.write(f.toPath(),
+                    editor.getText().toString().getBytes("UTF-8"));
+            current = f;
+            name.setText(f.getName());
+            refresh();
+            msg("Zapisano");
+        } catch (Exception e) {
+            msg("Błąd zapisu");
+        }
+    }
+
+    void refresh() {
+        files.clear();
+        File[] list = dir.listFiles();
+        if (list != null)
+            for (File f : list)
+                if (f.isFile() && f.getName().endsWith(".txt"))
+                    files.add(f.getName());
+
+        RecyclerView rv = findViewById(R.id.openFilesRecyclerView);
+        rv.setAdapter(new RecyclerView.Adapter<Holder>() {
+            @Override
+            public Holder onCreateViewHolder(
+                    android.view.ViewGroup p, int t) {
+                TextView v = new TextView(MainActivity.this);
+                v.setPadding(16, 12, 16, 12);
+                return new Holder(v);
+            }
+
+            @Override
+            public void onBindViewHolder(Holder h, int i) {
+                String s = files.get(i);
+                h.v.setText(s);
+                h.v.setOnClickListener(v -> open(s));
+            }
+
+            @Override
+            public int getItemCount() {
+                return files.size();
+            }
+        });
+    }
+
+    static class Holder extends RecyclerView.ViewHolder {
+        TextView v;
+        Holder(TextView v) {
+            super(v);
+            this.v = v;
+        }
+    }
+
+    void msg(String s) {
+        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+    }
+}
